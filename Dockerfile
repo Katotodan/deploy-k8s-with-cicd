@@ -8,7 +8,7 @@ ENV GIT_COMMIT=${GIT_COMMIT}
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install
 COPY app.js .
 EXPOSE 3000
 CMD ["node", "app.js"]
