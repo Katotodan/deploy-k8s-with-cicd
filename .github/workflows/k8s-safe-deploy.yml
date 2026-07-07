@@ -1,0 +1,29 @@
+name: Safe K8s Deploy
+
+on: push
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy and verify
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
+      run: |
+        echo "$KUBE_CONFIG_DATA" | base64 -d > kubeconfig
+        export KUBECONFIG=./kubeconfig
+        
+        # Update deployment
+        kubectl set image deployment/web-app web=username/web-app:${{ github.sha }}
+        
+        # Wait for rollout with timeout
+        if ! kubectl rollout status deployment/web-app --timeout=5m; then
+          echo "Rollout failed, reverting..."
+          kubectl rollout undo deployment/web-app
+          kubectl rollout status deployment/web-app
+          exit 1
+        fi
+        
+        echo "Deployment successful"
